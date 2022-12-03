@@ -7,11 +7,14 @@ public class PlayerController : MonoBehaviour
 {
     private PlayerInputActions inputActions;
     public CharacterController characterController;
+    public Animator animator;
 
     private bool inputBlocker = false;
     private float lastInputStrike;
     private Coroutine attackManage;
 
+    private Vector2 stanceVec;
+    private Vector2 animVec;
     private enum Stance
     {
         ForwardGuard,
@@ -28,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
+        
         inputActions = new PlayerInputActions();
         inputActions.Player._1Hit.performed += context => inputToManager(1);
         inputActions.Player._2Hit.performed += context => inputToManager(2);
@@ -55,6 +59,12 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        stanceVec = StanceCoordLookup(currentStance);
+        if(stanceVec != animVec)
+        {
+            animator.SetFloat("BlendX", stanceVec.x);
+            animator.SetFloat("BlendY", stanceVec.y);
+        }
         Vector2 vector = inputActions.Player.Movement.ReadValue<Vector2>();
         characterController.Move(8 * new Vector3(vector.x * Time.deltaTime,0,vector.y * Time.deltaTime));
     }
@@ -70,16 +80,17 @@ public class PlayerController : MonoBehaviour
         }
     }
     private void ParryManager(Stance stance)
-    {
-        print("Cancelling");
+    {   
         StopCoroutine(attackManage);
         currentStance = stance;
         inputBlocker = !inputBlocker;
+        print(currentStance);
     }
 
     private void exitStance()
     {
         currentStance = Stance.ForwardGuard;
+        print(currentStance);
     }
 
     private IEnumerator InputManager(float ctx)
@@ -90,7 +101,8 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(0.2f);
         print(currentStance);
         yield return new WaitForSeconds(0.25f);
-        print("Attack Complete...   " + strikeN);
+        //  print("Attack Complete...   " + strikeN);
+        print(stanceVec);
         inputBlocker = false;
     }
 
@@ -101,7 +113,7 @@ public class PlayerController : MonoBehaviour
         switch (strikeNum)
         {
             case 1:
-                return Stance.RearGuardR;
+                return Stance.RearGuardR;         
             case 3:
                 return Stance.StandingGuardR;         
             case 5:
@@ -109,20 +121,74 @@ public class PlayerController : MonoBehaviour
             case 7:
                 return Stance.RearGuardL;
 
-            case 2:          
-                if (n < 0.5f) { return Stance.StandingGuardR; }
-                else { return Stance.RearGuardR;}   
+            case 2:
+                if (n < 0.5f)
+                {
+                    return Stance.StandingGuardR;
+
+                }
+                else
+                {
+                    return Stance.RearGuardR;
+                }
             case 6:
-                if (n < 0.5f) { return Stance.StandingGuardL; }
-                else { return Stance.RearGuardL; }
+                if (n < 0.5f)
+                {
+                    return Stance.StandingGuardL;
+
+                }
+                else
+                {
+                    return Stance.RearGuardL;
+                }
 
             case 8:
             case 4:
-                if (n < 0.5f) { return Stance.RearGuardR; }
-                else { return Stance.RearGuardL; }
+                if (n < 0.5f) {
+                    return Stance.RearGuardR; 
+                }
+                else {
+                    return Stance.RearGuardL; }
             default:
                 return Stance.ForwardGuard;
         }
+    }
+
+    private Vector2 StanceCoordLookup(Stance stance)
+    {
+        Vector2 vec;
+        switch (stance)
+        {
+            case Stance.RearGuardR:
+                vec.x = 1;
+                vec.y= -1;
+                break;
+            case Stance.RearGuardL:
+                vec.x = -1;
+                vec.y = -1;
+                break;
+            case Stance.StandingGuardR:
+                vec.x = 1;
+                vec.y = 0;
+                break;
+            case Stance.StandingGuardL:
+                vec.x = -1;
+                vec.y = 0;
+                break;
+            case Stance.HighGuardR:
+                vec.x = 1;
+                vec.y = 1;
+                break;
+            case Stance.HighGuardL:
+                vec.x = -1;
+                vec.y = 1;
+                break;
+            default:
+                vec.x = 0;
+                vec.y = 0;
+                break;
+        }
+        return vec;
     }
 
 }
